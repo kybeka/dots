@@ -1,3 +1,6 @@
+
+{{ if eq .chezmoi.os "darwin" }}
+
 # Use Homebrew Python
 export PATH="/opt/homebrew/bin:$PATH"
 
@@ -90,3 +93,8 @@ zle-line-init() {
 }
 zle -N zle-line-init
 
+{{ else if eq .chezmoi.os "linux" }}
+
+# TODO
+
+{{ end }}
