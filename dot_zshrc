@@ -1,0 +1,92 @@
+# Use Homebrew Python
+export PATH="/opt/homebrew/bin:$PATH"
+
+# an iTerm2 thingy
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+# Aliases
+alias python=python3
+alias pip=pip3
+alias mkvenv='python3 -m venv venv && source venv/bin/activate'
+
+# Better LS (deprecated because of eza)
+# alias ll='ls -lah'
+
+# Use eza instead of ls
+alias ls='eza -lah --icons'         # long list, all files, human-readable
+alias ll='eza -lah --icons'         # same as ls, just shorthand
+alias lt='eza --tree --icons'       # show directory tree
+alias la='eza -a --icons'           # all files, including dotfiles
+alias lg='eza -lah --icons --git'       # list with git status
+alias lsd='eza -lah --icons -D'         # list only directories
+
+# Using bat and fd
+alias cat='bat'
+alias find='fd'
+
+# Colorize terminal
+export CLICOLOR=1
+export LSCOLORS=ExFxBxDxCxegedabagacad
+
+# Carapace Setup
+autoload -U compinit && compinit
+export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense' # optional
+zstyle ':completion:*' format $'\e[2;37mCompleting %d\e[m'
+source <(carapace _carapace)
+
+# Starship Setup
+eval "$(starship init zsh)"
+
+# Autosuggestions (ghost text)
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# Syntax highlighting
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Cute cow prompt
+fortune | cowsay
+
+# Load zsh hooks
+autoload -Uz add-zsh-hook
+
+# Move prompt to bottom of terminal before each command
+fix-prompt-bottom() {
+  local term_lines=$(tput lines)
+  print -n "\e[${term_lines};H"
+  [[ -n $ZLE ]] && zle reset-prompt
+}
+add-zsh-hook precmd fix-prompt-bottom
+
+# Set up a line editor hook to preserve original prompt and handle Ctrl+D
+zle-line-init() {
+  emulate -L zsh
+
+  [[ $CONTEXT == start ]] || return 0
+
+  while true; do
+    zle .recursive-edit
+    local -i ret=$?
+    [[ $ret == 0 && $KEYS == $'\4' ]] || break
+    [[ -o ignore_eof ]] || exit 0
+  done
+
+  local saved_prompt=$PROMPT
+  local saved_rprompt=$RPROMPT
+
+  PROMPT=$'\e[93m❯ \e[0m\e[93m'
+  RPROMPT=$'\e[0m'
+  zle .reset-prompt
+
+  PROMPT=$saved_prompt
+  RPROMPT=$saved_rprompt
+
+  if (( ret )); then
+    zle .send-break
+  else
+    zle .accept-line
+  fi
+
+  return $ret
+}
+zle -N zle-line-init
+
